@@ -84,7 +84,7 @@ function instanceKeyPair {
 			done
 			echo -e "${noColor}\n"
 		elif [[ "$keyPair" == "-new" ]]; then
-			let newKey=true;
+			newKey=true;
 			echo -e "Create new key-pair: ${green}\c"
 			read keyPair
 			echo -e "${noColor}\c"	
@@ -96,31 +96,6 @@ function instanceKeyPair {
 	done
 }
 
-#Read configuration from Config folder. This Config folder must existed for this function to work.
-function readConfig {
-	echo -e "\n${yellow}List of available config files:"
-	listConfigFile=`ls Config/* | grep Config | grep -o "/[^.]*" | grep -o [^/]*`
-	let count=0
-	for i in $(echo $listConfigFile | tr " " "\n"); do
-		let count+=1
-		echo "$count. $i"
-		configFileArray["$count"]="$i"
-	done
-	while true; do		
-		echo -e "${noColor}"
-		echo -e "Which config file you want to use (enter as number): ${green}\c"
-		read configChoice
-		echo -e "${noColor}\c"
-		fileChosen=`echo ${configFileArray[$configChoice]}`
-		if [[ "$fileChosen" != '' ]]; then
-			for i in $(cat Config/$fileChosen.config); do
-				declare `echo $i | grep -o "[^:]*:" | grep -o "[^:]*"`=`echo $i | grep -o ":[^;]*" | grep -o "[^:]*"`
-			done
-			break
-		fi
-		echo -e "${red}$configChoice is not a valid choice."
-	done	
-}
 
 #Function to save configuration for this application.
 function saveConfig {
@@ -134,8 +109,8 @@ function saveConfig {
 		echo -e "${noColor}"	
 
 		#Attributes save here should match all varibles you defined above. (e.g. amiID, keyPair)
-		echo "amiID:$amiID;" >> Config/$configName.config
-		echo "instanceType:$instanceType;" > Config/$configName.config
+		echo "amiID:$amiID;" > Config/$configName.config
+		echo "instanceType:$instanceType;" >> Config/$configName.config
 		echo "keyPair:$keyPair;" >> Config/$configName.config
 		
 		echo -e "${yellow}Your \"$configName.config\" file is saved.${noColor}"
@@ -182,7 +157,28 @@ while true; do
 	elif [[ "$deployOpt" == "2" ]]; then
 		
 		#Run from config files
-		readConfig
+		echo -e "\n${yellow}List of available config files:"
+		listConfigFile=`ls Config/* | grep Config | grep -o "/[^.]*" | grep -o [^/]*`
+		let count=0
+		for i in $(echo $listConfigFile | tr " " "\n"); do
+			let count+=1
+			echo "$count. $i"
+			configFileArray["$count"]="$i"
+		done
+		while true; do		
+			echo -e "${noColor}"
+			echo -e "Which config file you want to use (enter as number): ${green}\c"
+			read configChoice
+			echo -e "${noColor}\c"
+			fileChosen=`echo ${configFileArray[$configChoice]}`
+			if [[ "$fileChosen" != '' ]]; then
+				for i in $(cat Config/$fileChosen.config); do
+					declare `echo $i | grep -o "[^:]*:" | grep -o "[^:]*"`=`echo $i | grep -o ":[^;]*" | grep -o "[^:]*"`
+				done
+				break
+			fi
+			echo -e "${red}$configChoice is not a valid choice."
+		done	
 		break
 	fi
 	echo -e "${red}$deployOpt is a not valid choice.${noColor}"
@@ -195,13 +191,51 @@ echo -e "${yellow}Instance's AMI: ${green}$amiID"
 echo -e "${yellow}Instance's type: ${green}$instanceType"
 echo -e "${yellow}Keypair Name: ${green}$keyPair${noColor}"
 
-#Do creation here
 
-#Create key here if needed
-if [[ newKey ]]; then
-	aws ec2 create-key-pair --key-name "$keyPair" | grep -o "\-\-\-\-\-BEGIN RSA PRIVATE KEY\-\-\-\-\-[^-]*\-\-\-\-\-END RSA PRIVATE KEY\-\-\-\-\-" > Key\\"$keyPair".pem
-	sed -i 's,\\n,\n,g' Key\\"$keyPair".pem
-fi
+#Comfimation creation.
+while true; do
+	echo -e "\nComfirm (${green}Y${noColor}/${green}N${noColor})? ${green}\c" 
+	read comfirmation
+	echo -e "${noColor}\c"
+	if [[ `echo "$comfirmation" | tr [:upper:] [:lower:]` == "y" ]]; then
+		
+		echo -e "\n${yellow}Creating instances......"
+		#Do creation here
+		#Create key here if needed
+		if [[ "$newKey" ]]; then
+			aws ec2 create-key-pair --key-name "$keyPair" | grep -o "\-\-\-\-\-BEGIN RSA PRIVATE KEY\-\-\-\-\-[^-]*\-\-\-\-\-END RSA PRIVATE KEY\-\-\-\-\-" > Key\\"$keyPair".pem
+			sed -i 's,\\n,\n,g' Key\\"$keyPair".pem
+			chown 400 Key\\"$keyPair".pem
+		fi
+
+		#Create instance
+		createInstance=`aws ec2 run-instances --image-id $amiID --instance-type $instanceType --key-name $keyPair` 
+		instanceID=`echo $createInstance | grep -o "InstanceId" | grep -o i-[^\"]*`
+		creatTag=`aws ec2 create-tags --resources $instanceID --tags Key=Name,Value=$ec2Name`
+		break
+	elif [[ `echo "$comfirmation" | tr [:upper:] [:lower:]` == "n" ]]; then
+		exit
+	fi
+	echo -e "${red}$comfirmation is not a valid choice. ${noColor}"
+done
+
+#Create Elastic Ip for your instance
+
+while true; do
+	echo -e "Do you want to associate an elastic IP for your instance (${green}Y${noColor}/${green}N${noColor})? ${green}\c" 
+	read EIPComfirm
+	echo -e "${noColor}\c"
+	if [[ `echo "$EIPComfirm" | tr [:upper:] [:lower:]` == "y" ]]; then
+		newEIP=`aws ec2 allocate-address | grep "PublicIp" | grep -o [0-9.]*[0-9]`
+		associateIP=`aws ec2 associate-address --instance-id $instanceID --public-ip $newEIP`
+		
+		break
+	elif [[ `echo "$EIPComfirm" | tr [:upper:] [:lower:]` == "n" ]]; then
+		break
+	fi
+	echo -e "${red}$EIPComfirm is not a valid choice. ${noColor}"
+done
+
 
 #Save configuration to config file.
 if [[ "$deployOpt" == "1" ]]; then
