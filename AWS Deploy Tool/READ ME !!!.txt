@@ -1,0 +1,32 @@
+AWS DEPLOY TOOL
+
+Version: 2.0
+Created By: Ryan Huynh
+Currently support services: Tomcat7 and Apache2
+Database backup: mySQL
+
+---= Basic Guide =---
+
+I.Prerequisite
+- AWS CLI: check the guide how to install AWS CLI here http://docs.aws.amazon.com/cli/latest/userguide/installing.html
+- Install additional packages for your CLI: python, pip, ssh, rsync, mysql.
+- Deploy Folder: where you put your new files in. (e.g. Eventomation.war, Spiderman.war, etc...)
+- Key Folder: This is where you can keep keypair file for your instance. Each instance that you access need a key (files with extension .pem). Please keep filename the same as when you create it.
+- Config: keep your config files in here (config files are used for automated deployment )
+
+II.Run the script.
+- Run the run.sh script to start the script
+  1.Enter you AWS crediential and specify the region where your instance is in. You can leave the output text as blank. (Note: you only need to enter it one, unless you want to switch to different region.)
+  2. Choose deployment method.
+  		a. From user input:
+		  1.Enter the instance ID of your instance. You can type -help to display the current instances in that region.
+		  2.Choose which type of application.
+		  3.Confirm the target deploy path for your application. You can modify it by choose "N".
+		  4.Choose if you want to back up database. If you answer 'yes', you need to provide correct database connection.
+		b. From config file (config file for your application can be generate the 1st time you deploy your application. Check step 4 below)
+  3. Begin to sync file to server, backup and deploy new changes.
+  4. If you choose to enter configuration from user's input, you have the option to save it in config file here.
+
+III.Results
+-Everytime you deploy new changes. The old change will be put inside Backup folder. You can verify/retrieve it by SSH to the server.
+-Back up script for your database is inside folder dbscript.
