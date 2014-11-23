@@ -12,7 +12,7 @@ ec2InstanceTypeList=" t2.micro m1.small m3.medium m3.large m3.xlarge m3.2xlarge 
 #Function to check for credential. Crediential only need to enter one, unless you change to different region
 function credentialCheck {
 	while true; do
-		echo -e "You need to configure your AWS crediential first, configure your crediential now (${green}Y${noColor}/${green}N${noColor})? ${green}\c"
+		echo -e "\nYou need to configure your AWS crediential first, configure your crediential now (${green}Y${noColor}/${green}N${noColor})? ${green}\c"
 		read userInput
 		echo -e "${noColor}\c"
 		if [[ `echo "$userInput" | tr [:upper:] [:lower:]` == "y" ]]; then
@@ -28,74 +28,118 @@ function credentialCheck {
 	done
 }
 
-#AMI of your instance. STILL NEED TO CHECK VALIDATION
+#AMI of your instance. 
 function instanceAMI {
 	while true; do
-		echo -e "Enter AMI for your instance (${green} -default ${noColor}for AWS default AMI ${green}-custom ${noColor} for custom AMI): ${green}\c"
+		echo -e "\nEnter AMI for your instance (${green} -default ${noColor}for AWS default AMI ${green}-custom ${noColor}for custom AMI): ${green}\c"
 		read amiID
 		echo -e "${noColor}\c"
 		if [[ "$amiID" == "-default" ]]; then
 			echo -e "\n${yellow}AWS default EC2 AMI id:"
 			echo -e "Amazon Linux AMI 2014.09.01: ${green}ami-4b6f650e"
 			echo -e "${yellow}Ubuntu Server 14.04: ${green}ami-076e6542"
-			echo -e "${yellow}Microsoft Windows Server 2012 R2 Base: ${green}ami-df43569a${noColor}\n"
+			echo -e "${yellow}Microsoft Windows Server 2012 R2 Base: ${green}ami-df43569a${noColor}"
 		elif [[ "$amiID" == "-custom" ]]; then
 			echo -e "\n${yellow}Custom AMI id:"
 			amiList=`aws ec2 describe-images --owners self` 
 			for i in $(echo $amiList | grep "ImageId" |  grep -o ami-[^\"]*); do
-				amiName=`aws ec2 describe-images --image-ids $i | grep \"Name\" | grep -o :[^,]* | grep -o "[a-zA-Z0-9]*"`
+				amiName=`aws ec2 describe-images --image-ids $i | grep \"Name\": | grep -o :[^,]* | grep -o "[a-zA-Z0-9]*"`
 				echo -e "${yellow}$amiName: ${green}$i"
 			done
-			echo -e "${noColor}"
-		else
-			echo ''
+			echo -e "${noColor}\c"
+		elif [[ `echo $amiID | grep 'ami-[a-z0-9][a-z0-9][a-z0-9][a-z0-9][a-z0-9][a-z0-9][a-z0-9][a-z0-9]\>'` ]]; then
 			break
-		fi			
+		else	
+			echo -e "${red}$amiID is not a valid AMI ID.${noColor}"		
+		fi
 	done
 }
 
 #Instance type. The default list for instance type is defined above. Please check for instance type update !
 function instanceType {
 	while true; do
-		echo -e "Choose an instance type for your instance: ${green}\c"
+		echo -e "\nChoose an instance type for your instance: ${green}\c"
 		read instanceType
 		echo -e "${noColor}\c"
 		if [[ "$instanceType" == "-help" ]]; then
-			echo -e "${yellow}Please refer to http://aws.amazon.com/ec2/instance-types/ for more details.${noColor}\n"	
-		elif [[ `echo "$ec2InstanceTypeList" | grep " $instanceType "` ]]; then
-			echo ''
+			echo -e "${yellow}Please refer to http://aws.amazon.com/ec2/instance-types/ for more details.${noColor}"	
+		elif [[ `echo "$ec2InstanceTypeList" | grep " $instanceType "` ]]; then			
 			break
 		else
-			echo -e "${red}${instanceType} is not a supported instance type.${noColor}\n"
+			echo -e "${red}${instanceType} is not a supported instance type.${noColor}"
 		fi
 	done
 }
 
 #Choose a key pair for your instance or create a new one
 function instanceKeyPair {
-	while true; do
-		echo -e "Choose a key-pair for your instance( ${green}-list${noColor} to display available keys, ${green}-new ${noColor}to create a new key): ${green}\c"
+	let arrayIndex=0
+	for i in $(aws ec2 describe-key-pairs | grep "KeyName" | grep -o :'\s'\"[a-zA-Z0-9]* | grep -o "[a-zA-Z0-9]*"); do		
+		keypairList["$arrayIndex"]="$i"
+		let arrayIndex+=1
+	done
+	while true; do		
+		echo -e "\nChoose a key-pair for your instance( ${green}-list${noColor} to display available keys, ${green}-new ${noColor}to create a new key): ${green}\c"
 		read keyPair
 		echo -e "${noColor}\c"
 		if [[ "$keyPair" == "-list" ]]; then
 			echo -e "\n${yellow}Available key-pair: \c"
-			for i in $(aws ec2 describe-key-pairs | grep "KeyName" | grep -o :'\s'\"[a-zA-Z0-9]* | grep -o "[a-zA-Z0-9]*"); do
+			for i in "${keypairList[@]}"; do
 				echo -e "${green}$i \c"
-			done
-			echo -e "${noColor}\n"
+			done 
+			echo -e "${noColor}"
 		elif [[ "$keyPair" == "-new" ]]; then
 			newKey=true;
-			echo -e "Create new key-pair: ${green}\c"
+			echo -e "\nCreate new key-pair: ${green}\c"
 			read keyPair
 			echo -e "${noColor}\c"	
 			echo -e "${yellow}Your key will be created and saved in the Key folder.${noColor}"
 			break
 		else
-			break
+			for i in "${keypairList[@]}"; do
+				if [[ `echo $keyPair` == `echo $i` ]]; then
+					found=true
+					break
+				fi				
+			done
+			if [[ ! "$found" ]]; then
+				echo -e "${red}$keyPair is not a valid key.${noColor}"
+			else 
+				break
+			fi
 		fi
 	done
 }
 
+#Create Elastic IP for your instance.
+function createEIP {
+	while true; do
+	echo -e "\nDo you want to associate an elastic IP with your instance (${green}Y${noColor}/${green}N${noColor})? ${green}\c" 
+	read EIPComfirm
+	echo -e "${noColor}\c"
+	if [[ `echo "$EIPComfirm" | tr [:upper:] [:lower:]` == "y" ]]; then
+		echo -e "\n${yellow}Waiting for your instance to be ready....${noColor}"
+
+		#Can only allocate new ip when instance is ready.
+		status=false
+		while true; do
+			sleep 1
+			instanceReady=`aws ec2 describe-instance-status --instance-id $instanceID --filter Name=instance-state-name,Values=running | grep "Name"`
+			if [[ $instanceReady ]]; then
+				break
+			fi
+		done
+
+		newEIP=`aws ec2 allocate-address | grep "PublicIp" | grep -o [0-9.]*[0-9]`
+		associateIP=`aws ec2 associate-address --instance-id $instanceID --public-ip $newEIP`
+		
+		break
+	elif [[ `echo "$EIPComfirm" | tr [:upper:] [:lower:]` == "n" ]]; then
+		break
+	fi
+	echo -e "${red}$EIPComfirm is not a valid choice. ${noColor}"
+	done
+}
 
 #Function to save configuration for this application.
 function saveConfig {
@@ -122,7 +166,7 @@ echo -e "\n${lCyan}*************************************************************
 echo -e   "${lCyan}*                                                                             *" 
 echo -e   "${lCyan}*                              AWS EC2 TOOL v1.0                              *" 
 echo -e   "${lCyan}*                                                                             *" 
-echo -e   "${lCyan}*******************************************************************************\n${noColor}" 
+echo -e   "${lCyan}*******************************************************************************${noColor}" 
 
 #Ask for AWS crediential.
 credentialCheck
@@ -130,15 +174,15 @@ credentialCheck
 #Add a name tags for your instance
 echo -e "Enter a name for your instance: ${green}\c"
 read ec2Name
-echo -e "${noColor}"
+echo -e "${noColor}\c"
 
 #Choose methods to create instance
-echo -e "Create your instance using?\n "
-echo -e "${yellow}1. User's input.         2. From pre-defined config file.${noColor}\n"
+echo -e "\nCreate your instance using?\n "
+echo -e "${yellow}1. User's input.         2. From pre-defined config file.${noColor}"
 while true; do
-	echo -e "Your choice: ${green}\c"
+	echo -e "\nYour choice: ${green}\c"
 	read deployOpt
-	echo -e "${noColor}"
+	echo -e "${noColor}\c"
 
 	#Manually input 
 	if [[ "$deployOpt" == "1" ]]; then
@@ -178,7 +222,8 @@ while true; do
 				break
 			fi
 			echo -e "${red}$configChoice is not a valid choice."
-		done	
+		done
+			
 		break
 	fi
 	echo -e "${red}$deployOpt is a not valid choice.${noColor}"
@@ -203,15 +248,16 @@ while true; do
 		#Do creation here
 		#Create key here if needed
 		if [[ "$newKey" ]]; then
-			aws ec2 create-key-pair --key-name "$keyPair" | grep -o "\-\-\-\-\-BEGIN RSA PRIVATE KEY\-\-\-\-\-[^-]*\-\-\-\-\-END RSA PRIVATE KEY\-\-\-\-\-" > Key\\"$keyPair".pem
-			sed -i 's,\\n,\n,g' Key\\"$keyPair".pem
-			chown 400 Key\\"$keyPair".pem
+			aws ec2 create-key-pair --key-name "$keyPair" | grep -o "\-\-\-\-\-BEGIN RSA PRIVATE KEY\-\-\-\-\-[^-]*\-\-\-\-\-END RSA PRIVATE KEY\-\-\-\-\-" > Key/"$keyPair".pem
+			sed -i 's,\\n,\n,g' Key/"$keyPair".pem
+			chmod 400 Key/"$keyPair".pem
 		fi
-
+		
 		#Create instance
 		createInstance=`aws ec2 run-instances --image-id $amiID --instance-type $instanceType --key-name $keyPair` 
-		instanceID=`echo $createInstance | grep -o "InstanceId" | grep -o i-[^\"]*`
-		creatTag=`aws ec2 create-tags --resources $instanceID --tags Key=Name,Value=$ec2Name`
+		instanceID=`echo $createInstance | grep -o "InstanceId[^,]*" | grep -o i-[^\"]*`
+		createTag=`aws ec2 create-tags --resources $instanceID --tags Key=Name,Value=$ec2Name`
+		echo -e "${noColor}\c"
 		break
 	elif [[ `echo "$comfirmation" | tr [:upper:] [:lower:]` == "n" ]]; then
 		exit
@@ -220,22 +266,15 @@ while true; do
 done
 
 #Create Elastic Ip for your instance
+createEIP
 
-while true; do
-	echo -e "Do you want to associate an elastic IP for your instance (${green}Y${noColor}/${green}N${noColor})? ${green}\c" 
-	read EIPComfirm
-	echo -e "${noColor}\c"
-	if [[ `echo "$EIPComfirm" | tr [:upper:] [:lower:]` == "y" ]]; then
-		newEIP=`aws ec2 allocate-address | grep "PublicIp" | grep -o [0-9.]*[0-9]`
-		associateIP=`aws ec2 associate-address --instance-id $instanceID --public-ip $newEIP`
-		
-		break
-	elif [[ `echo "$EIPComfirm" | tr [:upper:] [:lower:]` == "n" ]]; then
-		break
-	fi
-	echo -e "${red}$EIPComfirm is not a valid choice. ${noColor}"
-done
-
+#Display your IP Adress.
+if [[ `echo "$EIPComfirm" | tr [:upper:] [:lower:]` == "y" ]]; then
+	echo -e "\nYour instance public IP address is: ${green}$newEIP.${noColor}"
+else
+	nonEIP=`aws ec2 describe-instances --filters Name=instance-id,Values=$instanceID | grep "PublicIpAddress" | grep -o "[0-9][^\"]*"`
+	echo -e "\nYour instance public IP address (non elastic) is: ${green}$nonEIP${noColor}"
+fi
 
 #Save configuration to config file.
 if [[ "$deployOpt" == "1" ]]; then

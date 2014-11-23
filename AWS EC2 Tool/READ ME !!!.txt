@@ -1,0 +1,29 @@
+AWS EC2 TOOL
+
+Version: 1.0
+Created By: Ryan Huynh
+
+---= Basic Guide =---
+
+I.Prerequisite
+- AWS CLI: check the guide how to install AWS CLI here http://docs.aws.amazon.com/cli/latest/userguide/installing.html
+- Install additional packages for your CLI: python, pip, ssh, rsync, mysql.
+- Key Folder: Any key you create during instance creation will be keep in here. Each instance that you access need a key (files with extension .pem). Please keep filename the same as when you create it.
+- Config: keep your config files in here (config files are used for automated creation ).
+- This script use some of aws cli commands which require certain permission to perform. Please contact your AWS admin if you need permissions.
+
+II.Run the script.
+- Run the run.sh script to start the script
+  1.Enter you AWS crediential and specify the region where your instance is in. You can leave the output text as blank. (Note: you only need to enter it one, unless you want to switch to different region.)
+  2.Enter the name of your instance. 
+  3.Choose ec2 creation method.
+  		a. From user input:		 
+		  1.Choose AMI ID for your instance. 
+		  2.Choose an instance type for your instance.
+		  3.Choose a keypair for your instance. A keypair is needed to access to instance.
+		b. From config file (config file for your application can be generate the 1st time you deploy your application. Check step 5 below).
+  3.Confirm configuration of your instance. 
+  4.Create Elastic IP for your instance or use default one (Note: default public IP will reset everytime you restart instance.)
+  5.If you choose to enter configuration from user's input, you have the option to save it in config file here.
+
+

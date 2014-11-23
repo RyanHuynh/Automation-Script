@@ -13,6 +13,7 @@ I.Prerequisite
 - Deploy Folder: where you put your new files in. (e.g. Eventomation.war, Spiderman.war, etc...)
 - Key Folder: This is where you can keep keypair file for your instance. Each instance that you access need a key (files with extension .pem). Please keep filename the same as when you create it.
 - Config: keep your config files in here (config files are used for automated deployment )
+- This script use some of aws cli command which require certain permission to perform. Please contact your AWS admin if you need permissions.
 
 II.Run the script.
 - Run the run.sh script to start the script
