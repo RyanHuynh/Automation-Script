@@ -1,3 +1,7 @@
+#AWS EC2 TOOL 
+#Created by Ryan Huynh
+#Version 1.0
+
 #!/bin/bash
 # Some ultilities variables
 yellow='\e[1;33m'
@@ -8,7 +12,7 @@ green='\e[0;32m'
 #NEED TO RECHECK THOSE VALUE
 ec2InstanceTypeList=" t2.micro m1.small m3.medium m3.large m3.xlarge m3.2xlarge r3.large r3.xlarge r3.2xlarge r3.4xlarge r3.4xlarge r3.8xlarge t2.micro t2.small t2.medium m2.xlarge m2.2xlarge m2.4xlarge cr1.8xlarge m1.medium m1.large m1.xlarge "
 
-#Function for this app
+#Functions for this app
 #Function to check for credential. Crediential only need to enter one, unless you change to different region
 function credentialCheck {
 	while true; do
@@ -172,7 +176,7 @@ echo -e   "${lCyan}*************************************************************
 credentialCheck
 
 #Add a name tags for your instance
-echo -e "Enter a name for your instance: ${green}\c"
+echo -e "\nEnter a name for your instance: ${green}\c"
 read ec2Name
 echo -e "${noColor}\c"
 

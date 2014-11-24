@@ -1,0 +1,29 @@
+AWS RDS TOOL
+
+Version: 1.0
+Created By: Ryan Huynh
+
+---= Basic Guide =---
+
+I.Prerequisite
+- AWS CLI: check the guide how to install AWS CLI here http://docs.aws.amazon.com/cli/latest/userguide/installing.html
+- Install additional packages for your CLI: python, pip, ssh, rsync, mysql.
+- Config: keep your config files in here (config files are used for automated creation ).
+- This script use some of aws cli commands which require certain permission to perform. Please contact your AWS admin if you need permissions.
+
+II.Run the script.
+- Run the run.sh script to start the script
+  1.Enter you AWS crediential and specify the region where your instance is in. You can leave the output text as blank. (Note: you only need to enter it one, unless you want to switch to different region.)
+  2.Enter the unique name for your instance. Name must contain only: letter, digits or hyphen
+  3.Enter username for your instance. Must start with a letter and must have at least 2 chars.
+  4.Enter password for your instance. Must be 8 chars long at least.
+  5.Choose RDS creation method.
+		a. From user input:		 
+		  1.Choose an engine type for your instance.
+		  2.Choose an instance class for your instance.
+		  3.Choose allocated memory for your instance.
+		b. From config file (config file for your application can be generate the 1st time you deploy your application. Check step 7 below).
+  6.Confirm configuration of your instance. 
+  7.If you choose to enter configuration from user's input, you have the option to save it in config file here.
+
+

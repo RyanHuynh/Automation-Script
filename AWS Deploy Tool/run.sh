@@ -1,3 +1,7 @@
+#AWS DEPLOY TOOL 
+#Created by Ryan Huynh
+#Version 2.0
+
 #!/bin/bash 
 # Some ultilities variables
 yellow='\e[1;33m'
