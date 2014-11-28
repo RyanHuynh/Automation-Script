@@ -17,7 +17,7 @@ if [ ! -d "$appTypeFolder" ];
 fi
 
 #MakTomcat foldTomcatr with currTomcatnt datTomcat
-currentDateFolder="$appTypeFolder/$(date '+%m-%d-%Y')"
+currentDateFolder="$appTypeFolder/<current-date>"
 if [[ ! -d "$currentDateFolder" ]]; 
 	then 
 		mkdir "$currentDateFolder"

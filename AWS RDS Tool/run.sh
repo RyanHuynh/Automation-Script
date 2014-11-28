@@ -12,7 +12,7 @@ noColor='\e[0m'
 red='\e[0;31m'
 green='\e[0;32m'
 bold=`tput bold`
-dbInstanceClassList=" t2.micro db.m1.small db.m3.medium db.m3.large db.m3.xlarge db.m3.2xlarge db.r3.large db.r3.xlarge db.r3.2xlarge db.r3.4xlarge db.r3.4xlarge db.r3.8xlarge db.t2.micro db.t2.small db.t2.medium db.m2.xlarge db.m2.2xlarge db.m2.4xlarge db.cr1.8xlarge db.m1.medium db.m1.large db.m1.xlarge "
+dbInstanceClassList=" db.t2.micro db.m1.small db.m3.medium db.m3.large db.m3.xlarge db.m3.2xlarge db.r3.large db.r3.xlarge db.r3.2xlarge db.r3.4xlarge db.r3.4xlarge db.r3.8xlarge db.t2.micro db.t2.small db.t2.medium db.m2.xlarge db.m2.2xlarge db.m2.4xlarge db.cr1.8xlarge db.m1.medium db.m1.large db.m1.xlarge "
 dbEngine=" MySQL postgres oracle-se1 oracle-se oracle-ee sqlserver-ee sqlserver-se sqlserver-ex $engine sqlserver-web "
 instanceCreated=false
 
@@ -95,7 +95,7 @@ function createPassword {
 #Define database engine for your instance
 function instanceEngine {
 	while true; do
-		echo -e "\nType of DB ( ${green}-help${noColor} to display valid options ): ${green}\c" 
+		echo -e "\nType of DB engine( ${green}-help${noColor} to display valid options ): ${green}\c" 
 		read engine
 		echo -e "${noColor}\c"
 		if [[ "$engine" == "-help" ]]; then
@@ -129,7 +129,7 @@ function instanceType {
 #Define allocated memory for your instance. EACH DATABSE ENGINE HAS DIFFERENT MIN AND MAX VALUE (IT'S UP TO DATE AS 11/24/2014)
 function instanceMemory {
 	while true; do
-		echo -e "\nAllocated storage value ( GB ): ${green}\c" 
+		echo -e "\nAllocated storage value in GB ( ${green}-help${noColor} if you are clueless ): ${green}\c" 
 		read allocatedStorage
 		echo -e "${noColor}\c"
 		if [[ "$allocatedStorage" == "-help" ]]; then
@@ -207,9 +207,9 @@ createPassword
 #RDS DB configuration options
 while [[ "$instanceCreated" == false ]]; do
 	echo -e "\nGenerate RDS database using configuration from :\n "
-	echo -e "${yellow}1. User's input.         2. From pre-defined config file.${noColor}\n"
+	echo -e "${yellow}1. User's input.         2. From pre-defined config file.${noColor}"
 	while true; do
-		echo -e "Your option: ${green}\c"
+		echo -e "\nYour option: ${green}\c"
 		read deployOpt
 		echo -e "${noColor}\c"
 
@@ -231,31 +231,36 @@ while [[ "$instanceCreated" == false ]]; do
 		
 			#Run from config files
 			echo -e "\n${yellow}List of available config files:"
-			listConfigFile=`ls Config/* | grep Config | grep -o "/[^.]*" | grep -o [^/]*`
-			let count=0
-			for i in $(echo $listConfigFile | tr " " "\n"); do
-				let count+=1
-				echo "$count. $i"
-				configFileArray["$count"]="$i"
-			done
-			while true; do		
-				echo -e "${noColor}"
-				echo -e "Which config file you want to use (enter as number): ${green}\c"
-				read configChoice
-				echo -e "${noColor}\c"
-				fileChosen=`echo ${configFileArray[$configChoice]}`
-				if [[ "$fileChosen" != '' ]]; then
-					for i in $(cat Config/$fileChosen.config); do
-						declare `echo $i | grep -o "[^:]*:" | grep -o "[^:]*"`=`echo $i | grep -o ":[^;]*" | grep -o "[^:]*"`
-					done
-					break
-				fi
-				echo -e "${red}$configChoice is not a valid choice."
-			done
-			break
+			listConfigFile=`ls Config/*.config | grep Config | grep -o "/[^.]*" | grep -o [^/]*`
+			#if it's not empty then proceed
+			if [[ $listConfigFile ]]; then
+				let count=0
+				for i in $(echo $listConfigFile | tr " " "\n"); do
+					let count+=1
+					echo "$count. $i"
+					configFileArray["$count"]="$i"
+				done
+				while true; do		
+					echo -e "${noColor}"
+					echo -e "Which config file you want to use (enter as number): ${green}\c"
+					read configChoice
+					echo -e "${noColor}\c"
+					fileChosen=`echo ${configFileArray[$configChoice]}`
+					if [[ "$fileChosen" != '' ]]; then
+						for i in $(cat Config/$fileChosen.config); do
+							declare `echo $i | grep -o "[^:]*:" | grep -o "[^:]*"`=`echo $i | grep -o ":[^;]*" | grep -o "[^:]*"`
+						done
+						break
+					fi
+					echo -e "${red}$configChoice is not a valid choice."
+				done
+				break
+			else
+				echo -e "${yellow}There is no files in this Config folder.${noColor}"
+			fi		
+		else
+			echo -e "${red}Please choose option 1 or 2.${noColor}"
 		fi
-
-		echo -e "${red}Please choose option 1 or 2.${noColor}\n"
 	done
 
 	#Comfirm creation with defined configuration
@@ -274,16 +279,16 @@ while [[ "$instanceCreated" == false ]]; do
 		if [[ `echo "$confirm" | tr [:upper:] [:lower:]`  == "y" ]]; then
 			echo -e "${yellow}Creating database instance ....${noColor}"
 			let instanceCreated=true
-			#aws rds create-db-instance --db-instance-identifier "$instanceId" --allocated-storage "$allocatedStorage" --db-instance-class "$instanceClass" --engine "$engine" --master-username "$username" --master-user-password "$password"
+			aws rds create-db-instance --db-instance-identifier "$instanceId" --allocated-storage "$allocatedStorage" --db-instance-class "$instanceClass" --engine "$engine" --master-username "$username" --master-user-password "$password"
 			break
 		elif [[ `echo "$confirm" | tr [:upper:] [:lower:]` == "n" ]]; then
-			break
+			exit			
 		fi
 			echo -e "${red}$confirm is not a valid option."
 	done
 done
+
 #Save configuration to config file.
 if [[ "$deployOpt" == "1" ]]; then
 	saveConfig
 fi
-#aws rds create-db-instance --db-instance-identifier "$instanceId" --allocated-storage 200 --db-instance-class db.m1.small --engine sqlserver-se --db-security-group codazen-db-security-group --master-username "$username" --master-user-password "$password" --license-model license-included*

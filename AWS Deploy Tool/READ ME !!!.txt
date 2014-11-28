@@ -1,6 +1,6 @@
 AWS DEPLOY TOOL
 
-Version: 2.0
+Version: 2.01
 Created By: Ryan Huynh
 Currently support services: Tomcat7 and Apache2
 Database backup: mySQL

@@ -21,11 +21,9 @@ function credentialCheck {
 		echo -e "${noColor}\c"
 		if [[ `echo "$userInput" | tr [:upper:] [:lower:]` == "y" ]]; then
 			echo -e "${red}${bold}NOTE: ${noColor}${normal}For region, please specify the region in which your instance lives (e.g. us-west-1)\n"
-			aws configure
-			echo ''
+			aws configure			
 			break
 		elif [[ `echo "$userInput" | tr [:upper:] [:lower:]` == "n" ]]; then
-			echo ''
 			break
 		fi
 		echo -e "${red}$userInput is not a valid choice. ${noColor}"
@@ -206,31 +204,36 @@ while true; do
 		
 		#Run from config files
 		echo -e "\n${yellow}List of available config files:"
-		listConfigFile=`ls Config/* | grep Config | grep -o "/[^.]*" | grep -o [^/]*`
-		let count=0
-		for i in $(echo $listConfigFile | tr " " "\n"); do
-			let count+=1
-			echo "$count. $i"
-			configFileArray["$count"]="$i"
-		done
-		while true; do		
-			echo -e "${noColor}"
-			echo -e "Which config file you want to use (enter as number): ${green}\c"
-			read configChoice
-			echo -e "${noColor}\c"
-			fileChosen=`echo ${configFileArray[$configChoice]}`
-			if [[ "$fileChosen" != '' ]]; then
-				for i in $(cat Config/$fileChosen.config); do
-					declare `echo $i | grep -o "[^:]*:" | grep -o "[^:]*"`=`echo $i | grep -o ":[^;]*" | grep -o "[^:]*"`
-				done
-				break
-			fi
-			echo -e "${red}$configChoice is not a valid choice."
-		done
-			
-		break
+		listConfigFile=`ls Config/*.config | grep Config | grep -o "/[^.]*" | grep -o [^/]*`
+		#if it's not empty then proceed
+		if [[ $listConfigFile ]]; then
+			let count=0
+			for i in $(echo $listConfigFile | tr " " "\n"); do
+				let count+=1
+				echo "$count. $i"
+				configFileArray["$count"]="$i"
+			done
+			while true; do		
+				echo -e "${noColor}"
+				echo -e "Which config file you want to use (enter as number): ${green}\c"
+				read configChoice
+				echo -e "${noColor}\c"
+				fileChosen=`echo ${configFileArray[$configChoice]}`
+				if [[ "$fileChosen" != '' ]]; then
+					for i in $(cat Config/$fileChosen.config); do
+						declare `echo $i | grep -o "[^:]*:" | grep -o "[^:]*"`=`echo $i | grep -o ":[^;]*" | grep -o "[^:]*"`
+					done
+					break
+				fi
+				echo -e "${red}$configChoice is not a valid choice."
+			done
+			break
+		else
+			echo -e "${yellow}There is no files in this Config folder.${noColor}"
+		fi		
+	else
+		echo -e "${red}$deployOpt is a not valid choice.${noColor}"
 	fi
-	echo -e "${red}$deployOpt is a not valid choice.${noColor}"
 done
 
 #Display configuration
@@ -239,7 +242,6 @@ echo -e "\n${yellow}Instance Name: ${green}$ec2Name"
 echo -e "${yellow}Instance's AMI: ${green}$amiID"
 echo -e "${yellow}Instance's type: ${green}$instanceType"
 echo -e "${yellow}Keypair Name: ${green}$keyPair${noColor}"
-
 
 #Comfimation creation.
 while true; do
@@ -279,6 +281,8 @@ else
 	nonEIP=`aws ec2 describe-instances --filters Name=instance-id,Values=$instanceID | grep "PublicIpAddress" | grep -o "[0-9][^\"]*"`
 	echo -e "\nYour instance public IP address (non elastic) is: ${green}$nonEIP${noColor}"
 fi
+
+echo -e "\nRemember to assign a new security group for your instance !!!"
 
 #Save configuration to config file.
 if [[ "$deployOpt" == "1" ]]; then

@@ -1,6 +1,6 @@
 #AWS DEPLOY TOOL 
 #Created by Ryan Huynh
-#Version 2.0
+#Version 2.01
 
 #!/bin/bash 
 # Some ultilities variables
@@ -15,16 +15,14 @@ green='\e[0;32m'
 #Function to check for credential. Crediential only need to enter one, unless you change to different region
 function credentialCheck {
 	while true; do
-		echo -e "You need to configure your AWS crediential first, configure your crediential now (${green}Y${noColor}/${green}N${noColor})? ${green}\c"
+		echo -e "\nYou need to configure your AWS crediential first, configure your crediential now (${green}Y${noColor}/${green}N${noColor})? ${green}\c"
 		read userInput
 		echo -e "${noColor}\c"
 		if [[ `echo "$userInput" | tr [:upper:] [:lower:]` == "y" ]]; then
 			echo -e "${red}${bold}NOTE: ${noColor}${normal}For region, please specify the region in which your instance lives (e.g. us-west-1)\n"
-			aws configure
-			echo ''
+			aws configure			
 			break
 		elif [[ `echo "$userInput" | tr [:upper:] [:lower:]` == "n" ]]; then
-			echo ''
 			break
 		fi
 		echo -e "${red}$userInput is not a valid choice. ${noColor}"
@@ -51,7 +49,6 @@ function inputInstanceID {
 			done
 			echo -e "${noColor}\c"
 		elif [[ `echo "$instanceID" | grep ''` != `echo ''` ]] && [[ `echo "$instanceIDList" | grep "$instanceID"` ]]; then
-			echo ''
 			break
 		else
 			echo -e "${red}$instanceID is not a valid instance ID${noColor}"	
@@ -64,11 +61,10 @@ function inputInstanceID {
 #      - Backup folder's name for your application.
 function appTypeChoice {
 	while true; do
-		echo -e "Type of application ( ${green}Java${noColor} or ${green}WordPress${noColor} ): ${green}\c" 
+		echo -e "\nType of application ( ${green}Java${noColor} or ${green}WordPress${noColor} ): ${green}\c" 
 		read appType
 		echo -e "${noColor}\c"
 		if [[ `echo "$appType" | tr -d ''` != `echo ''` ]] && [[ "$appType" == "Java" || "$appType" == "WordPress" ]] ; then
-			echo ''
 			break
 		fi
 		echo -e "${red}$appType is not a valid type.${noColor}"	
@@ -81,7 +77,7 @@ function appTypeChoice {
 function targetDeploymentPath {
 	targetPathModified=false
 	while true; do
-		echo -e "The target deploy path on the server is \c"
+		echo -e "\nThe target deploy path on the server is \c"
 		if [[ "$targetPathModified" == false ]]; then
 			if [[ "$appType" == "Java" ]]; then
 				targetPath="/var/lib/tomcat7/webapps/"
@@ -96,13 +92,12 @@ function targetDeploymentPath {
 		read folderComfirm
 		echo -e "${noColor}\c"
 		if [[ `echo "$folderComfirm" | tr [:upper:] [:lower:]` == "y" ]]; then
-			echo''
 			break
 		elif [[ `echo "$folderComfirm" | tr [:upper:] [:lower:]` == "n" ]]; then
 			echo -e "\nNew target path: ${green}\c"
 			read targetPath	
 			targetPathModified=true	
-			echo -e "${noColor}"
+			echo -e "${noColor}\c"
 		else
 			echo -e "${red}$folderComfirm is not a valid choice.${noColor}"
 		fi
@@ -113,7 +108,7 @@ function targetDeploymentPath {
 function dbBackupFunct {
 	dbConnectionChk=false
 	while [[ "$dbConnectionChk" == false ]]; do
-		echo -e "Back up database for this application ( ${green}Y${noColor}/${green}N${noColor} ): ${green}\c"
+		echo -e "\nBack up database for this application ( ${green}Y${noColor}/${green}N${noColor} ): ${green}\c"
 		read dbBackup
 		echo -e "${noColor}\c"
 		if [[ `echo "$dbBackup" | tr [:upper:] [:lower:]` == "y" ]]; then 
@@ -135,34 +130,35 @@ function dbBackupFunct {
 					read -s dbpass
 					echo -e "${noColor}\n"
 					echo -e "${yellow}Checking database connection.....\c"
-					#sqlcmd=`mysql -u $dbuser -p$dbpass -h $hostName -D $dbName -e "show databases"`	
-					#if [[ "$sqlcmd" != '' ]]; then
-						echo -e "SUCCESS${noColor}"
-						let dbConnectionChk=true								
-					#fi							
-						#echo -e "${noColor}"	
-						break
-				elif [[ "$databaseType" == "SQLserver" ]]; then
-					echo -e "\nEnter server name of your database: ${green}\c"
-					read hostName
-					echo -e "${noColor}"
-					echo -e "Enter database name: ${green}\c"
-					read dbName
-					echo -e "${noColor}"
-					echo -e "Enter username: ${green}\c"
-					read dbuser
-					echo -e "${noColor}"
-					echo -e "Enter password: ${green}\c"
-					read -s dbpass
-					echo -e "${noColor}\n"
-					echo -e "${yellow}Checking database connection.....\c"
-					sqlcmd=`sqlcmd -S $hostName -U $dbuser -P $dbpass -d $dbName -q "exit"`	
+					sqlcmd=`mysql -u $dbuser -p$dbpass -h $hostName -D $dbName -e "show databases"`	
 					if [[ "$sqlcmd" != '' ]]; then
 						echo -e "SUCCESS${noColor}"
 						let dbConnectionChk=true								
 					fi							
-						echo -e "${noColor}"	
+						echo -e "${noColor}\c"	
 						break
+				elif [[ "$databaseType" == "SQLserver" ]]; then
+					echo -e "${yellow}SQLserver is not supported atm.${noColor}"
+					#echo -e "\nEnter server name of your database: ${green}\c"
+					#read hostName
+					#echo -e "${noColor}"
+					#echo -e "Enter database name: ${green}\c"
+					#read dbName
+					#echo -e "${noColor}"
+					#echo -e "Enter username: ${green}\c"
+					#read dbuser
+					#echo -e "${noColor}"
+					#echo -e "Enter password: ${green}\c"
+					#read -s dbpass
+					#echo -e "${noColor}\n"
+					#echo -e "${yellow}Checking database connection.....\c"
+					#sqlcmd=`sqlcmd -S $hostName -U $dbuser -P $dbpass -d $dbName -q "exit"`	
+					#if [[ "$sqlcmd" != '' ]]; then
+						#echo -e "SUCCESS${noColor}"
+						#let dbConnectionChk=true								
+					#fi							
+						#echo -e "${noColor}"	
+						#break
 				else
 					echo -e "${red}$databaseType is not a valid database type.${noColor}"
 				fi
@@ -230,7 +226,9 @@ function saveConfig {
 #Read configuration from Config folder. This Config folder must existed for this function to work.
 function readConfig {
 	echo -e "\n${yellow}List of available config files:"
-		listConfigFile=`ls Config/* | grep Config | grep -o "/[^.]*" | grep -o [^/]*`
+	listConfigFile=`ls Config/*.config | grep Config | grep -o "/[^.]*" | grep -o [^/]*`
+	#if it's not empty then proceed
+	if [[ $listConfigFile ]]; then
 		let count=0
 		for i in $(echo $listConfigFile | tr " " "\n"); do
 			let count+=1
@@ -250,24 +248,28 @@ function readConfig {
 				break
 			fi
 			echo -e "${red}$configChoice is not a valid choice."
-		done	
+		done
+		break
+	else
+		echo -e "${yellow}There is no files in this Config folder.${noColor}"
+	fi		
 }
 
 
 echo -e "\n${lCyan}*******************************************************************************" 
 echo -e   "${lCyan}*                                                                             *" 
-echo -e   "${lCyan}*                           AWS DEPLOY TOOL v2.0                              *" 
+echo -e   "${lCyan}*                           AWS DEPLOY TOOL v2.01                              *" 
 echo -e   "${lCyan}*                                                                             *" 
-echo -e   "${lCyan}*******************************************************************************\n${noColor}" 
+echo -e   "${lCyan}*******************************************************************************${noColor}" 
 
 #Ask for AWS crediential.
 credentialCheck
 
 #Choose methods to deploy
-echo -e "Deploy your application using?\n "
-echo -e "${yellow}1. User's input.         2. From pre-defined config file.${noColor}\n"
+echo -e "\nDeploy your application using?\n "
+echo -e "${yellow}1. User's input.         2. From pre-defined config file.${noColor}"
 while true; do
-	echo -e "Your choice: ${green}\c"
+	echo -e "\nYour choice: ${green}\c"
 	read deployOpt
 	echo -e "${noColor}\c"
 	if [[ "$deployOpt" == "1" ]]; then
@@ -288,11 +290,37 @@ while true; do
 	elif [[ "$deployOpt" == "2" ]]; then
 		
 		#Run from config files
-		readConfig
-
-		break
+		echo -e "\n${yellow}List of available config files:"
+		listConfigFile=`ls Config/*.config | grep Config | grep -o "/[^.]*" | grep -o [^/]*`
+		#if it's not empty then proceed
+		if [[ $listConfigFile ]]; then
+			let count=0
+			for i in $(echo $listConfigFile | tr " " "\n"); do
+				let count+=1
+				echo "$count. $i"
+				configFileArray["$count"]="$i"
+			done
+			while true; do		
+				echo -e "${noColor}"
+				echo -e "Which config file you want to use (enter as number): ${green}\c"
+				read configChoice
+				echo -e "${noColor}\c"
+				fileChosen=`echo ${configFileArray[$configChoice]}`
+				if [[ "$fileChosen" != '' ]]; then
+					for i in $(cat Config/$fileChosen.config); do
+						declare `echo $i | grep -o "[^:]*:" | grep -o "[^:]*"`=`echo $i | grep -o ":[^;]*" | grep -o "[^:]*"`
+					done
+					break
+				fi
+				echo -e "${red}$configChoice is not a valid choice."
+			done
+			break
+		else
+			echo -e "${yellow}There is no files in this Config folder.${noColor}"
+		fi		
+	else
+		echo -e "${red}$deployOpt is a not valid choice.${noColor}"
 	fi
-	echo -e "${red}$deployOpt is a not valid choice.${noColor}"
 done
 
 #Display configuration
@@ -310,42 +338,57 @@ else
 	echo -e "${yellow}Database backup: ${green}No${noColor}"
 fi
 
+#Comfimation creation.
+while true; do
+	echo -e "\nComfirm (${green}Y${noColor}/${green}N${noColor})? ${green}\c" 
+	read comfirmation
+	echo -e "${noColor}\c"
+	if [[ `echo "$comfirmation" | tr [:upper:] [:lower:]` == "y" ]]; then
 
-#Get the selected instance
-currentInstance=`aws ec2 describe-instances --filters Name=instance-id,Values=$instanceID `
+		#Get current date
+		currentDate=`date '+%m-%d-%Y'`
 
-#Get Ip of current selected instance
-instanceIP=`echo "$currentInstance" | grep -o "PublicIpAddress[^,]*" | grep -o [0-9].*[0-9]`
+		#Get the selected instance
+		currentInstance=`aws ec2 describe-instances --filters Name=instance-id,Values=$instanceID `
 
-#Get keypair name for your instance and set it to private.
-instanceKey=`echo "$currentInstance" | grep "KeyName" | grep -o ": \".*" | grep -o '[0-9a-zA-Z]*'`
-chmod 400 key/"$instanceKey".pem
+		#Get Ip of current selected instance
+		instanceIP=`echo "$currentInstance" | grep -o "PublicIpAddress[^,]*" | grep -o [0-9].*[0-9]`
 
-#Sync local files to remote deploy folder.
-ssh -i key/"$instanceKey".pem ubuntu@"$instanceIP" 'bash -s' < 'bin/deployfolder.sh'
-echo -e "\n${yellow}Syncing local files to remote server.....${noColor}\n"
+		#Get keypair name for your instance and set it to private.
+		instanceKey=`echo "$currentInstance" | grep "KeyName" | grep -o ": \".*" | grep -o '[0-9a-zA-Z]*'`
+		chmod 400 Key/"$instanceKey".pem
 
-scp -i key/"$instanceKey".pem -r Deploy/* ubuntu@"$instanceIP":~/Deploy
+		#Sync local files to remote deploy folder.
+		ssh -i key/"$instanceKey".pem ubuntu@"$instanceIP" 'bash -s' < 'bin/deployfolder.sh'
+		echo -e "\n${yellow}Syncing local files to remote server.....${noColor}\n"
 
-echo -e "\n${yellow}Begin to back up and deploy new changes.....${noColor}\n"
+		scp -i key/"$instanceKey".pem -r Deploy/* ubuntu@"$instanceIP":~/Deploy
 
-#Modify execDeploy script with current configuration
-cp bin/template.sh bin/execbackup.sh
-sed -i "s,<app-type>,$appType,g" bin/execbackup.sh
-sed -i "s,<target-deploy>,$targetPath,g" bin/execbackup.sh
-sed -i "s,<service-type>,$serviceType,g" bin/execbackup.sh
+		echo -e "\n${yellow}Begin to back up and deploy new changes.....${noColor}\n"
 
-#Run database backup
-if [[ `echo "$dbBackup" | tr [:upper:] [:lower:]` == "y" ]]; then 
-	currentDate=`date '+%m-%d-%Y'`
-	mysqldump -u $dbuser -p$dbpass -h $hostName $dbName > bin/dbscript/$dbName-$currentDate.sql
-	scp -i key/"$instanceKey".pem -r bin/dbscript ubuntu@"$instanceIP":~/Backup/$appType/$currentDate
-fi
+		#Modify execDeploy script with current configuration
+		cp bin/template.sh bin/execbackup.sh
+		sed -i "s,<app-type>,$appType,g" bin/execbackup.sh
+		sed -i "s,<target-deploy>,$targetPath,g" bin/execbackup.sh
+		sed -i "s,<service-type>,$serviceType,g" bin/execbackup.sh
+		sed -i "s,<current-date>,$currentDate,g" bin/execbackup.sh
+		
+		#Begin to deploy
+		ssh -i Key/"$instanceKey".pem ubuntu@"$instanceIP" 'bash -s' < 'bin/execbackup.sh'
 
-#Begin to deploy
-ssh -i Key/"$instanceKey".pem ubuntu@"$instanceIP" 'bash -s' < 'bin/execbackup.sh'
+		#Run database backup
+		if [[ `echo "$dbBackup" | tr [:upper:] [:lower:]` == "y" ]]; then 			
+			mysqldump -u $dbuser -p$dbpass -h $hostName $dbName > bin/dbscript/$dbName-$currentDate.sql
+			scp -i key/"$instanceKey".pem -r bin/dbscript ubuntu@"$instanceIP":~/Backup/$appType/$currentDate
+		fi
 
-echo -e "\n${yellow}Deploy and Backup completed${noColor}"
+		echo -e "\n${yellow}Deploy and Backup completed.${noColor}"
+		break
+	elif [[ `echo "$comfirmation" | tr [:upper:] [:lower:]` == "n" ]]; then
+		exit
+	fi
+	echo -e "${red}$comfirmation is not a valid choice. ${noColor}"
+done
 
 #Save configuration in config to reuse.
 if [[ "$deployOpt" == "1" ]]; then
